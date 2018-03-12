@@ -34,6 +34,14 @@ class TranslateableBehavior extends Behavior
      * @var string[] the list of attributes to be translated
      */
     public $translationAttributes;
+    
+    /**
+     * Temp buffer for entity relations.
+     *
+     * @var array
+     */
+    protected $relationsBuffer = [];
+    
 
     /**
      * @inheritdoc
@@ -83,6 +91,8 @@ class TranslateableBehavior extends Behavior
 
         foreach ($translations as $translation) {
             if ($translation->getAttribute($this->translationLanguageAttribute) === $language) {
+                $this->relationsBuffer[] = $translation;
+                
                 return $translation;
             }
         }
@@ -93,6 +103,7 @@ class TranslateableBehavior extends Behavior
         $translation = new $class();
         $translation->setAttribute($this->translationLanguageAttribute, $language);
         $translations[] = $translation;
+        $this->relationsBuffer = $translations;
         $this->owner->populateRelation($this->translationRelation, $translations);
 
         return $translation;
@@ -135,7 +146,7 @@ class TranslateableBehavior extends Behavior
     public function afterSave()
     {
         /* @var ActiveRecord $translation */
-        foreach ($this->owner->{$this->translationRelation} as $translation) {
+        foreach ($this->relationsBuffer as $translation) {
             $this->owner->link($this->translationRelation, $translation);
         }
     }
